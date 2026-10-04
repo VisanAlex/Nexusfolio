@@ -98,6 +98,7 @@ export class ApiService {
     return this.buildFiltersFromQueryParams({
       filterByAccounts: userSettings?.['filters.accounts'],
       filterByAssetClasses: userSettings?.['filters.assetClasses'],
+      filterByAssetSubClasses: userSettings?.['filters.assetSubClasses']?.[0],
       filterByDataSource: userSettings?.['filters.dataSource'],
       filterBySymbol: userSettings?.['filters.symbol'],
       filterByTags: userSettings?.['filters.tags']

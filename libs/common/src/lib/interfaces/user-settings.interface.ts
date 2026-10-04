@@ -6,7 +6,7 @@ import {
   ViewMode
 } from '@ghostfolio/common/types';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
-import { AssetClass } from '@ghostfolio/prisma/enums';
+import { AssetClass, AssetSubClass } from '@ghostfolio/prisma/enums';
 
 export interface UserSettings {
   annualInterestRate?: number;
@@ -17,6 +17,7 @@ export interface UserSettings {
   emergencyFund?: number;
   'filters.accounts'?: string[];
   'filters.assetClasses'?: AssetClass[];
+  'filters.assetSubClasses'?: AssetSubClass[];
   'filters.dataSource'?: string;
   'filters.symbol'?: string;
   'filters.tags'?: string[];

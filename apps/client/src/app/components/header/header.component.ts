@@ -250,6 +250,8 @@ export class GfHeaderComponent implements OnChanges {
         userSetting['filters.accounts'] = filter.id ? [filter.id] : null;
       } else if (filter.type === 'ASSET_CLASS') {
         userSetting['filters.assetClasses'] = filter.id ? [filter.id] : null;
+      } else if (filter.type === 'ASSET_SUB_CLASS') {
+        userSetting['filters.assetSubClasses'] = filter.id ? [filter.id] : null;
       } else if (filter.type === 'DATA_SOURCE') {
         userSetting['filters.dataSource'] = filter.id ? filter.id : null;
       } else if (filter.type === 'SYMBOL') {

@@ -2,7 +2,7 @@ import { TAG_ID_EXCLUDE_FROM_ANALYSIS } from '@ghostfolio/common/config';
 import { getAssetProfileIdentifier } from '@ghostfolio/common/helper';
 import { Filter, PortfolioPosition } from '@ghostfolio/common/interfaces';
 import type { Tag } from '@ghostfolio/prisma/browser';
-import { AssetClass, DataSource } from '@ghostfolio/prisma/enums';
+import { AssetClass, AssetSubClass, DataSource } from '@ghostfolio/prisma/enums';
 
 import { translate } from '../i18n';
 import { PortfolioFilterFormValue } from './interfaces';
@@ -14,6 +14,20 @@ export function getAssetClassFilters(): Filter[] {
         id: assetClass,
         label: translate(assetClass),
         type: 'ASSET_CLASS'
+      } satisfies Filter;
+    })
+    .sort((a, b) => {
+      return a.label.localeCompare(b.label);
+    });
+}
+
+export function getAssetSubClassFilters(): Filter[] {
+  return Object.keys(AssetSubClass)
+    .map((assetSubClass) => {
+      return {
+        id: assetSubClass,
+        label: translate(assetSubClass),
+        type: 'ASSET_SUB_CLASS'
       } satisfies Filter;
     })
     .sort((a, b) => {
@@ -33,6 +47,10 @@ export function getFiltersFromPortfolioFilterFormValue(
     {
       id: value?.assetClass ?? '',
       type: 'ASSET_CLASS'
+    },
+    {
+      id: value?.assetSubClass ?? '',
+      type: 'ASSET_SUB_CLASS'
     },
     {
       id: value?.holding?.assetProfile?.dataSource ?? '',
@@ -96,6 +114,7 @@ export function getPortfolioFilterFormValue(
   return {
     account: getFilterId('ACCOUNT'),
     assetClass: getFilterId('ASSET_CLASS'),
+    assetSubClass: getFilterId('ASSET_SUB_CLASS'),
     holding: holding ?? null,
     tag: getFilterId('TAG')
   };

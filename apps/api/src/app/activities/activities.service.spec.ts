@@ -1,4 +1,6 @@
 import { AccountService } from '@ghostfolio/api/app/account/account.service';
+import { PrismaService } from '@ghostfolio/api/services/prisma/prisma.service';
+import { SymbolProfileService } from '@ghostfolio/api/services/symbol-profile/symbol-profile.service';
 import {
   activityDummyData,
   assetProfileDummyData
@@ -11,7 +13,12 @@ import {
 import { parseDate } from '@ghostfolio/common/helper';
 import { Activity, Filter } from '@ghostfolio/common/interfaces';
 
-import { AssetProfileSplit, DataSource } from '@prisma/client';
+import {
+  AssetProfileSplit,
+  AssetSubClass,
+  DataSource,
+  Prisma
+} from '@prisma/client';
 import { Big } from 'big.js';
 
 import { ActivitiesService } from './activities.service';
@@ -39,6 +46,63 @@ describe('ActivitiesService', () => {
       null,
       null
     );
+  });
+
+  it('filters activities by asset subclass', async () => {
+    const prismaService = {
+      order: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([])
+      }
+    };
+    const service = new ActivitiesService(
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      prismaService as unknown as PrismaService,
+      {
+        getSymbolProfiles: jest.fn().mockResolvedValue([])
+      } as unknown as SymbolProfileService,
+      null
+    );
+
+    await service.getActivities({
+      filters: [{ id: AssetSubClass.STOCK, type: 'ASSET_SUB_CLASS' }],
+      userCurrency: 'USD',
+      userId: 'user-id'
+    });
+
+    const [[{ where }]] = prismaService.order.findMany.mock
+      .calls as unknown as [{ where: Prisma.OrderWhereInput }][];
+
+    expect(where.SymbolProfile).toEqual({
+      OR: [
+        {
+          AND: [
+            {
+              OR: [{ assetSubClass: AssetSubClass.STOCK }]
+            },
+            {
+              OR: [
+                { assetProfileOverrides: { is: null } },
+                { assetProfileOverrides: { assetSubClass: null } }
+              ]
+            }
+          ]
+        },
+        {
+          assetProfileOverrides: {
+            OR: [{ assetSubClass: AssetSubClass.STOCK }]
+          }
+        }
+      ]
+    });
   });
 
   describe('getActivitiesForPortfolioCalculator', () => {

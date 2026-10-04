@@ -1005,6 +1005,7 @@ export class ActivitiesService {
     const {
       ACCOUNT: filtersByAccount = [],
       ASSET_CLASS: filtersByAssetClass = [],
+      ASSET_SUB_CLASS: filtersByAssetSubClass = [],
       DATA_SOURCE: [filterByDataSource] = [],
       SEARCH_QUERY: [filterBySearchQuery] = [],
       SYMBOL: [filterBySymbol] = [],
@@ -1056,6 +1057,48 @@ export class ActivitiesService {
           }
         ]
       };
+    }
+
+    if (filtersByAssetSubClass.length > 0) {
+      const assetSubClassWhereInput: Prisma.SymbolProfileWhereInput = {
+        OR: [
+          {
+            AND: [
+              {
+                OR: filtersByAssetSubClass.map(({ id }) => {
+                  return {
+                    assetSubClass:
+                      AssetSubClass[id as keyof typeof AssetSubClass]
+                  };
+                })
+              },
+              {
+                OR: [
+                  { assetProfileOverrides: { is: null } },
+                  { assetProfileOverrides: { assetSubClass: null } }
+                ]
+              }
+            ]
+          },
+          {
+            assetProfileOverrides: {
+              OR: filtersByAssetSubClass.map(({ id }) => {
+                return {
+                  assetSubClass: AssetSubClass[id as keyof typeof AssetSubClass]
+                };
+              })
+            }
+          }
+        ]
+      };
+
+      if (where.SymbolProfile) {
+        where.SymbolProfile = {
+          AND: [where.SymbolProfile, assetSubClassWhereInput]
+        };
+      } else {
+        where.SymbolProfile = assetSubClassWhereInput;
+      }
     }
 
     if (filterByDataSource && filterBySymbol) {

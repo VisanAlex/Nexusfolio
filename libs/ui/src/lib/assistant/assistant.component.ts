@@ -57,6 +57,7 @@ import {
   GfPortfolioFilterFormComponent,
   PortfolioFilterFormValue,
   getAssetClassFilters,
+  getAssetSubClassFilters,
   getFiltersFromPortfolioFilterFormValue,
   getHoldingsForFilter,
   getPortfolioFilterFormValue,
@@ -107,6 +108,7 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
 
   public accounts: AccountWithPlatform[] = [];
   public assetClasses: Filter[] = [];
+  public assetSubClasses: Filter[] = [];
   public dateRangeFormControl = new FormControl<string | null>(null);
   public dateRangeOptions: DateRangeOption[] = [];
   public holdings: PortfolioPosition[] = [];
@@ -125,6 +127,7 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
     {
       account: null,
       assetClass: null,
+      assetSubClass: null,
       holding: null,
       tag: null
     }
@@ -151,6 +154,7 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
   private filterTypes: Filter['type'][] = [
     'ACCOUNT',
     'ASSET_CLASS',
+    'ASSET_SUB_CLASS',
     'DATA_SOURCE',
     'SYMBOL',
     'TAG'
@@ -200,6 +204,7 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
 
   public ngOnInit() {
     this.assetClasses = getAssetClassFilters();
+    this.assetSubClasses = getAssetSubClassFilters();
 
     this.searchFormControl.valueChanges
       .pipe(

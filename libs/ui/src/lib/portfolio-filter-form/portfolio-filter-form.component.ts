@@ -58,6 +58,7 @@ export class GfPortfolioFilterFormComponent
 {
   public readonly accounts = input<AccountWithPlatform[]>([]);
   public readonly assetClasses = input<Filter[]>([]);
+  public readonly assetSubClasses = input<Filter[]>([]);
   public readonly disabled = model(false);
   public readonly holdings = input<PortfolioPosition[]>([]);
   public readonly tags = input<Filter[]>([]);
@@ -65,6 +66,7 @@ export class GfPortfolioFilterFormComponent
   public filterForm: FormGroup<{
     account: FormControl<string | null>;
     assetClass: FormControl<string | null>;
+    assetSubClass: FormControl<string | null>;
     holding: FormControl<PortfolioPosition | null>;
     tag: FormControl<string | null>;
   }>;
@@ -79,6 +81,7 @@ export class GfPortfolioFilterFormComponent
     this.filterForm = this.formBuilder.group({
       account: new FormControl<string | null>(null),
       assetClass: new FormControl<string | null>(null),
+      assetSubClass: new FormControl<string | null>(null),
       holding: new FormControl<PortfolioPosition | null>(null),
       tag: new FormControl<string | null>(null)
     });
@@ -159,6 +162,7 @@ export class GfPortfolioFilterFormComponent
         {
           account: value.account ?? null,
           assetClass: value.assetClass ?? null,
+          assetSubClass: value.assetSubClass ?? null,
           holding: value.holding ?? null,
           tag: value.tag ?? null
         },
