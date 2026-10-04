@@ -72,9 +72,12 @@ export class BenchmarksService {
           dataSource,
           symbol,
           date: {
-            in: chart.map(({ date }) => {
-              return resetHours(parseDate(date));
-            })
+            in: [
+              resetHours(startDate),
+              ...chart.map(({ date }) => {
+                return resetHours(parseDate(date));
+              })
+            ]
           }
         }
       })
