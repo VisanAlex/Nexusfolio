@@ -27,6 +27,7 @@ import {
 import { SubscriptionType } from '@ghostfolio/common/enums';
 import {
   getAssetProfileIdentifier,
+  hasGhostfolioPrefix,
   isValidCustomAssetProfileSymbol,
   parseDate
 } from '@ghostfolio/common/helper';
@@ -37,6 +38,7 @@ import {
 } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import {
+  AccountWithPlatform,
   AccountWithValue,
   OrderWithAccount,
   UserWithSettings
@@ -46,7 +48,7 @@ import { Injectable } from '@nestjs/common';
 import { Account, DataSource, Prisma } from '@prisma/client';
 import { Big } from 'big.js';
 import { isISIN } from 'class-validator';
-import { isSameSecond, parseISO } from 'date-fns';
+import { isSameSecond, parseISO, subDays } from 'date-fns';
 import { omit, uniqBy } from 'lodash-es';
 import { randomUUID } from 'node:crypto';
 
@@ -110,7 +112,7 @@ export class ImportService {
             userCurrency,
             userId,
             includeDrafts: true,
-            startDate: parseDate(dateOfFirstActivity),
+            startDate: subDays(parseDate(dateOfFirstActivity), 1),
             withExcludedAccountsAndActivities: true
           }),
           this.symbolProfileService.getSymbolProfiles([
@@ -119,7 +121,7 @@ export class ImportService {
               symbol
             }
           ]),
-          await this.dataProviderService.getDividends({
+          this.dataProviderService.getDividends({
             dataSource,
             symbol,
             from: parseDate(dateOfFirstActivity),
@@ -649,9 +651,23 @@ export class ImportService {
               'marketData'
             );
 
-            // Asset profile belongs to a different user, generate a new symbol
-            if (existingAssetProfile && !isDryRun) {
-              symbol = randomUUID();
+            if (
+              (existingAssetProfile || hasGhostfolioPrefix(symbol)) &&
+              !isDryRun
+            ) {
+              const isSymbolOfAssetProfileToCreate = assetProfilesToCreate.some(
+                ({ assetProfile: { symbol: symbolToCreate } }) => {
+                  return symbolToCreate === assetProfileSymbolMapping[symbol];
+                }
+              );
+
+              if (hasGhostfolioPrefix(symbol)) {
+                assetProfile.name ??= symbol;
+              }
+
+              symbol = isSymbolOfAssetProfileToCreate
+                ? assetProfileSymbolMapping[symbol]
+                : randomUUID();
             }
 
             assetProfile.symbol = symbol;
@@ -754,11 +770,14 @@ export class ImportService {
       userId: user.id
     });
 
-    const accounts = (await this.accountService.getAccounts(user.id)).map(
-      ({ id, name }) => {
-        return { id, name };
-      }
-    );
+    const accounts: Pick<AccountWithPlatform, 'id' | 'name' | 'platform'>[] = (
+      await this.accountService.accounts({
+        include: { platform: true },
+        where: { userId: user.id }
+      })
+    ).map(({ id, name, platform }) => {
+      return { id, name, platform };
+    });
 
     if (isDryRun) {
       accountsWithBalancesDto
@@ -836,6 +855,10 @@ export class ImportService {
 
     const activities: Activity[] = [];
 
+    const customAssetProfileSymbols: {
+      [assetProfileIdentifier: string]: string;
+    } = {};
+
     for (const activity of activitiesExtendedWithErrors) {
       const accountId = activity.accountId;
       const comment = activity.comment;
@@ -848,12 +871,12 @@ export class ImportService {
       const type = activity.type;
       const unitPrice = activity.unitPrice;
 
-      const assetProfile = assetProfiles[
-        getAssetProfileIdentifier({
-          dataSource: activity.assetProfile.dataSource,
-          symbol: activity.assetProfile.symbol
-        })
-      ] ?? {
+      const assetProfileIdentifier = getAssetProfileIdentifier({
+        dataSource: activity.assetProfile.dataSource,
+        symbol: activity.assetProfile.symbol
+      });
+
+      let assetProfile = assetProfiles[assetProfileIdentifier] ?? {
         dataSource: activity.assetProfile.dataSource,
         symbol: activity.assetProfile.symbol
       };
@@ -869,7 +892,7 @@ export class ImportService {
       let order:
         | OrderWithAccount
         | (Omit<OrderWithAccount, 'account' | 'SymbolProfile' | 'tags'> & {
-            account?: { id: string; name: string };
+            account?: Pick<AccountWithPlatform, 'id' | 'name' | 'platform'>;
             tags?: { id: string; name: string }[];
           });
 
@@ -904,7 +927,14 @@ export class ImportService {
           continue;
         }
 
-        const { dataSource, name, symbol } = assetProfile;
+        const customAssetProfileSymbol =
+          NON_INVESTMENT_ACTIVITY_TYPES.includes(type) ||
+          assetProfile.dataSource === DataSource.MANUAL
+            ? customAssetProfileSymbols[assetProfileIdentifier]
+            : undefined;
+
+        const { dataSource, name } = assetProfile;
+        const symbol = customAssetProfileSymbol ?? assetProfile.symbol;
 
         const createdActivity = await this.activitiesService.createActivity({
           comment,
@@ -940,9 +970,15 @@ export class ImportService {
           userId: user.id
         });
 
-        if (createdActivity.SymbolProfile?.symbol) {
-          // Update symbol that may have been assigned in createOrder()
-          assetProfile.symbol = createdActivity.SymbolProfile.symbol;
+        if (createdActivity.SymbolProfile.dataSource === DataSource.MANUAL) {
+          customAssetProfileSymbols[assetProfileIdentifier] =
+            createdActivity.SymbolProfile.symbol;
+
+          assetProfile = {
+            ...assetProfile,
+            dataSource: DataSource.MANUAL,
+            symbol: createdActivity.SymbolProfile.symbol
+          };
         }
 
         order = createdActivity;

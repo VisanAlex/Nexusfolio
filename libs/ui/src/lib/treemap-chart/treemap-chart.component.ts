@@ -314,23 +314,19 @@ export class GfTreemapChartComponent
             formatter: (context: GfTreemapScriptableContext) => {
               const raw = context.raw as GfTreemapDataPoint;
 
-              let netPerformancePercentWithCurrencyEffect = round(
-                raw._data.netPerformancePercentWithCurrencyEffect,
-                4
-              );
-
-              if (Math.abs(netPerformancePercentWithCurrencyEffect) === 0) {
-                netPerformancePercentWithCurrencyEffect = Math.abs(
-                  netPerformancePercentWithCurrencyEffect
-                );
-              }
-
               const name = raw._data.assetProfile.name;
               const symbol = raw._data.assetProfile.symbol;
 
               return [
                 isUUID(symbol) ? (name ?? symbol) : symbol,
-                `${netPerformancePercentWithCurrencyEffect > 0 ? '+' : ''}${(netPerformancePercentWithCurrencyEffect * 100).toFixed(2)}%`
+                `${(
+                  raw._data.netPerformancePercentWithCurrencyEffect * 100
+                ).toLocaleString(this.locale(), {
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 2,
+                  signDisplay: 'exceptZero',
+                  useGrouping: true
+                })}%`
               ];
             },
             hoverColor: undefined,
@@ -402,13 +398,23 @@ export class GfTreemapChartComponent
         label: (context: TooltipItem<'treemap'>) => {
           const raw = context.raw as GfTreemapDataPoint;
 
-          const allocationInPercentage = `${(raw._data.allocationInPercentage * 100).toFixed(2)}%`;
+          const allocationInPercentage = `${(
+            raw._data.allocationInPercentage * 100
+          ).toLocaleString(this.locale(), {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+            useGrouping: true
+          })}%`;
           const name = getHoldingName(raw._data.assetProfile);
 
-          const sign =
-            raw._data.netPerformancePercentWithCurrencyEffect > 0 ? '+' : '';
-
-          const netPerformanceInPercentageWithSign = `${sign}${(raw._data.netPerformancePercentWithCurrencyEffect * 100).toFixed(2)}%`;
+          const netPerformanceInPercentageWithSign = `${(
+            raw._data.netPerformancePercentWithCurrencyEffect * 100
+          ).toLocaleString(this.locale(), {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 2,
+            signDisplay: 'exceptZero',
+            useGrouping: true
+          })}%`;
 
           if (raw._data.valueInBaseCurrency !== null) {
             const value = raw._data.valueInBaseCurrency;
@@ -417,15 +423,18 @@ export class GfTreemapChartComponent
               `${name} (${allocationInPercentage})`,
               `${value?.toLocaleString(this.locale(), {
                 maximumFractionDigits: 2,
-                minimumFractionDigits: 2
+                minimumFractionDigits: 2,
+                useGrouping: true
               })} ${this.baseCurrency()}`,
               '',
               $localize`Change` + ' (' + $localize`Performance` + ')',
-              `${sign}${raw._data.netPerformanceWithCurrencyEffect.toLocaleString(
+              `${raw._data.netPerformanceWithCurrencyEffect.toLocaleString(
                 this.locale(),
                 {
                   maximumFractionDigits: 2,
-                  minimumFractionDigits: 2
+                  minimumFractionDigits: 2,
+                  signDisplay: 'exceptZero',
+                  useGrouping: true
                 }
               )} ${this.baseCurrency()} (${netPerformanceInPercentageWithSign})`
             ];

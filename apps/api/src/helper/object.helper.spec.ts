@@ -3121,17 +3121,12 @@ describe('redactAttributes', () => {
   });
 
   // The endpoint POST api/v1/activities returns a row of the database with the
-  // relation to the symbol profile
-  it('should redact an activity with the relation to the symbol profile', () => {
+  // asset profile
+  it('should redact an activity with the asset profile', () => {
     expect(
       redactPaths({
         object: {
-          comment: 'Bought on a dip',
-          currency: 'USD',
-          fee: 19.9,
-          id: '8c623328-6035-4b5f-b6d5-702cc1c9c56b',
-          quantity: 50,
-          SymbolProfile: {
+          assetProfile: {
             comment: 'Reviewed by the administrator',
             name: 'Apple Inc',
             scraperConfiguration: {
@@ -3141,26 +3136,33 @@ describe('redactAttributes', () => {
               url: 'https://example.org/get_price'
             },
             symbol: 'AAPL',
-            symbolMapping: { YAHOO: 'AAPL' }
+            symbolMapping: { YAHOO: 'AAPL' },
+            watchedByCount: 7
           },
+          comment: 'Bought on a dip',
+          currency: 'USD',
+          fee: 19.9,
+          id: '8c623328-6035-4b5f-b6d5-702cc1c9c56b',
+          quantity: 50,
           type: 'BUY',
           unitPrice: 220.79
         },
         paths: DEFAULT_REDACTED_PATHS
       })
     ).toStrictEqual({
+      assetProfile: {
+        comment: null,
+        name: 'Apple Inc',
+        scraperConfiguration: null,
+        symbol: 'AAPL',
+        symbolMapping: null,
+        watchedByCount: null
+      },
       comment: null,
       currency: 'USD',
       fee: null,
       id: '8c623328-6035-4b5f-b6d5-702cc1c9c56b',
       quantity: null,
-      SymbolProfile: {
-        comment: null,
-        name: 'Apple Inc',
-        scraperConfiguration: null,
-        symbol: 'AAPL',
-        symbolMapping: null
-      },
       type: 'BUY',
       unitPrice: 220.79
     });
